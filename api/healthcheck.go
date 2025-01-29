@@ -4,7 +4,8 @@ import "net/http"
 
 func (app *application) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	env := envelope{
-		"status": "available",
+		"app_name": app.config.appName,
+		"status":   "available",
 		"system_info": map[string]string{
 			"version":     appVersion,
 			"environment": app.config.env,

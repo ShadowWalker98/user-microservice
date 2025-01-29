@@ -1,10 +1,12 @@
 package data
 
-import "database/sql"
+import (
+	"gorm.io/gorm"
+)
 
 type Models struct {
 }
 
-func NewModels(conn *sql.DB) Models {
+func NewModels(conn *gorm.DB) Models {
 	return Models{}
 }

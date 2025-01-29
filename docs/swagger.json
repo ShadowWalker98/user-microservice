@@ -1,0 +1,39 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "User microservice for the gambare app",
+    "version": "1.0.0",
+    "title": "workout-users-microservice",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "host": "localhost:4001",
+  "basePath": "/v1",
+  "tags": [
+    {
+      "name": "healthcheck",
+      "description": "health check for the workout-users-microservice"
+    }
+  ],
+  "paths": {
+    "/healthcheck": {
+      "get": {
+        "tags": ["healthcheck"],
+        "summary": "returns the status of the application",
+        "description": "",
+        "operationId": "getHealthCheck",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "application status"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    }
+  }
+}

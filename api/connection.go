@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 	"time"
 )
 
-func (app *application) connectDB() *sql.DB {
+func (app *application) connectDB() *gorm.DB {
 	conn, err := sql.Open("postgres", app.config.db.dsn)
 	if err != nil {
 		app.logger.Println("Error while connecting to database: ", err)
@@ -30,5 +33,13 @@ func (app *application) connectDB() *sql.DB {
 		app.logger.Println(err)
 		return nil
 	}
-	return conn
+
+	gormDb, err := gorm.Open(postgres.New(postgres.Config{
+		Conn: conn,
+	}), &gorm.Config{})
+	if err != nil {
+		app.logger.Println("error occurred while initializing gorm with existing db connection")
+	}
+
+	return gormDb
 }
