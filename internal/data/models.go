@@ -5,8 +5,11 @@ import (
 )
 
 type Models struct {
+	UserModel UserModel
 }
 
 func NewModels(conn *gorm.DB) Models {
-	return Models{}
+	return Models{
+		UserModel: UserModel{db: conn},
+	}
 }

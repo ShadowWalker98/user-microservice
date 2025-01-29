@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -44,4 +45,10 @@ func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Reques
 	app.logError(r, err)
 	message := fmt.Sprintf(err.Error())
 	app.errorResponse(w, r, http.StatusBadRequest, message)
+}
+
+func (app *application) IncorrectCredentialsResponse(w http.ResponseWriter, r *http.Request) {
+	err := errors.New("incorrect email or password entered")
+	app.logError(r, err)
+	app.errorResponse(w, r, http.StatusUnauthorized, err)
 }

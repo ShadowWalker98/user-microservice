@@ -24,10 +24,17 @@ func serveSwaggerJson(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 
 func (app *application) routes() *httprouter.Router {
 	router := httprouter.New()
+
+	// addition of swagger
 	router.HandlerFunc(http.MethodGet, "/swagger/*any", httpSwagger.Handler(
 		httpSwagger.URL("/swagger.json"),
 	))
 	router.GET("/swagger.json", serveSwaggerJson)
+
+	// TODO: Add reset password flow later
+
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthCheckHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/users/signup", app.signupUsersHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/users/login", app.loginUsersHandler)
 	return router
 }
