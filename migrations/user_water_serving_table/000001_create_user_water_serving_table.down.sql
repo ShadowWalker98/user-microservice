@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS users_water_serving_data;
