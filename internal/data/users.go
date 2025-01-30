@@ -9,7 +9,7 @@ type UserModel struct {
 }
 
 type User struct {
-	UserId    int    `json:"user_id"`
+	UserId    int    `json:"user_id" gorm:"primaryKey"`
 	Email     string `json:"email"`
 	Password  string `json:"-"`
 	CreatedAt string `json:"created_at"`
@@ -35,6 +35,5 @@ func (u UserModel) GetUserByEmail(email string) (*User, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
-
 	return user, nil
 }
