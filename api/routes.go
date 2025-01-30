@@ -36,5 +36,7 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthCheckHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/users/signup", app.signupUsersHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/users/login", app.loginUsersHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/users/logout", app.logoutHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/users/validate", app.CheckIfLoggedInHandler)
 	return router
 }
