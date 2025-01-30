@@ -9,6 +9,7 @@ import (
 	"user-microservice/internal/data"
 )
 
+// TODO : Add validation checks for email and password
 func (app *application) signupUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email    string `json:"email"`
@@ -48,16 +49,31 @@ func (app *application) signupUsersHandler(w http.ResponseWriter, r *http.Reques
 
 	err = app.setCookies(w, r, &user)
 	if err != nil {
+		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	// creating a csrf token
+
+	csrfToken, err := app.models.UserTokenModel.CreateToken(user.UserId, data.CSRF)
+	if err != nil {
+		app.logger.Println("error occurred while generating CSRF token", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// setting it on the header instead of as a cookie
+	headers := make(http.Header)
+	headers.Set("X-Csrf-Token", csrfToken.Token)
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, headers)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 }
 
+// TODO: Add validation checks for email and password
 func (app *application) loginUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email    string `json:"email"`
@@ -100,10 +116,24 @@ func (app *application) loginUsersHandler(w http.ResponseWriter, r *http.Request
 	// update the older ones?
 	err = app.setCookies(w, r, user)
 	if err != nil {
+		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	// creating a csrf token
+
+	csrfToken, err := app.models.UserTokenModel.CreateToken(user.UserId, data.CSRF)
+	if err != nil {
+		app.logger.Println("error occurred while generating CSRF token", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// setting it on the header instead of as a cookie
+	headers := make(http.Header)
+	headers.Set("X-Csrf-Token", csrfToken.Token)
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, headers)
 	if err != nil {
 		app.logger.Println(err)
 	}
@@ -134,29 +164,10 @@ func (app *application) setCookies(w http.ResponseWriter, r *http.Request, user 
 	// setting the session token on the response
 
 	http.SetCookie(w, sessionCookie)
-
-	// generating a CSRF token for the user
-
-	csrfToken, err := app.models.UserTokenModel.CreateToken(user.UserId, data.CSRF)
-	if err != nil {
-		app.logger.Println("error occurred while generating CSRF token", err)
-		app.serverErrorResponse(w, r, err)
-		return err
-	}
-
-	csrfCookie := &http.Cookie{
-		Name:     "csrf_token",
-		Value:    csrfToken.Token,
-		Path:     "/",
-		Expires:  csrfToken.Expiry,
-		HttpOnly: false,
-	}
-
-	// setting the csrf token in the response
-	http.SetCookie(w, csrfCookie)
 	return nil
 }
 
+// TODO: Add validation checks for user id
 func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	// we get the user id from the body
@@ -189,6 +200,8 @@ func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+// TODO: Add validation checks for user id
 
 func (app *application) CheckIfLoggedInHandler(w http.ResponseWriter, r *http.Request) {
 	// get the user id and the tokens that have been passed
@@ -244,4 +257,47 @@ func (app *application) CheckIfLoggedInHandler(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+// TODO: Check if session token is valid and return CSRF token if it is
+func (app *application) CheckIfSessionIsValid(w http.ResponseWriter, r *http.Request) {
+	// get the session cookie from the request and then check it against the database
+
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	userId, err := app.models.UserTokenModel.CheckTokenValidity(data.Session, cookie.Value)
+	if err != nil {
+		err = app.writeJSON(w, http.StatusOK, envelope{"user_id": -1}, nil)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// generate new csrf token and set it on the header
+
+	// creating a csrf token
+
+	csrfToken, err := app.models.UserTokenModel.CreateToken(userId, data.CSRF)
+	if err != nil {
+		app.logger.Println("error occurred while generating CSRF token", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// setting it on the header instead of as a cookie
+	headers := make(http.Header)
+	headers.Set("X-Csrf-Token", csrfToken.Token)
+
+	// return the user id if the cookie is valid
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user_id": userId}, headers)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
 }

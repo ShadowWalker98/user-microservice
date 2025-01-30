@@ -136,3 +136,23 @@ func (utm UserTokenModel) CheckTokenValidityForUser(userId int, tokenType TokenT
 
 	return true, nil
 }
+
+func (utm UserTokenModel) CheckTokenValidity(tokenType TokenType, token string) (int, error) {
+	// returns user id and nil if the token is valid
+	// returns -1 if invalid
+
+	var userToken UserToken
+
+	result := utm.conn.Where("token_type = ?", tokenType).Where("token = ?", token).First(&userToken)
+	if result.Error != nil {
+		fmt.Println("no token found")
+		return -1, result.Error
+	}
+
+	if userToken.Expiry.Before(time.Now()) {
+		fmt.Println("token has expired")
+		return -1, result.Error
+	}
+
+	return userToken.UserId, nil
+}
