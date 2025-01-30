@@ -32,11 +32,13 @@ func (app *application) routes() *httprouter.Router {
 	router.GET("/swagger.json", serveSwaggerJson)
 
 	// TODO: Add reset password flow later
+	// TODO: Add all the routes to swagger
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthCheckHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/users/signup", app.signupUsersHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/users/login", app.loginUsersHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/users/logout", app.logoutHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/users/validate", app.CheckIfLoggedInHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/users/validate-session", app.CheckIfSessionIsValid)
 	return router
 }

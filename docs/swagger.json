@@ -1,5 +1,5 @@
 {
-  "swagger": "2.0",
+  "openapi": "3.0.0",
   "info": {
     "description": "User microservice for the gambare app",
     "version": "1.0.0",
@@ -9,12 +9,19 @@
       "url": "https://opensource.org/licenses/MIT"
     }
   },
-  "host": "localhost:4001",
-  "basePath": "/v1",
+  "servers": [
+    {
+      "url": "http://localhost:4001/v1"
+    }
+  ],
   "tags": [
     {
       "name": "healthcheck",
       "description": "health check for the workout-users-microservice"
+    },
+    {
+      "name": "user signup",
+      "description": "users signup handler for gambare"
     }
   ],
   "paths": {
@@ -24,15 +31,135 @@
         "summary": "returns the status of the application",
         "description": "",
         "operationId": "getHealthCheck",
-        "produces": ["application/json"],
         "responses": {
           "200": {
-            "description": "application status"
+            "description": "application status",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "healthy"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request"
           }
         }
+      }
+    },
+    "/users/signup": {
+      "post": {
+        "tags": ["user signup"],
+        "summary": "lets users sign up",
+        "description": "lets a user sign up after providing username and password",
+        "requestBody": {
+          "description": "User signup details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSignupRequest"
+              },
+              "example": {
+                "email": "john.doe@example.com",
+                "password": "securepassword123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User sign up was successful"
+          },
+          "400": {
+            "description": "email or password was in the wrong format/ or is already in use"
+          },
+          "500": {
+            "description": "error occurred during generation of token/interacting with database"
+          }
+        }
+      }
+    },
+    "/users/login": {
+      "post": {
+        "tags": ["user login"],
+        "summary": "lets users login",
+        "description": "lets a user login after providing the correct email and password",
+        "requestBody": {
+          "description": "User login details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLoginRequest"
+              },
+              "example": {
+                "email": "john.doe@example.com",
+                "password": "securepassword123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User login was successful",
+            "headers": {
+              "session_token": {
+                "description": "Session token",
+                "schema": {
+                  "type": "string",
+                  "example": "session_token=abc123xyz; Path=/; HttpOnly"
+                }
+              },
+              "csrf_token": {
+                "description": "csrf token",
+                "schema": {
+                  "type": "string",
+                  "example": "csrf_token=abc123xyz; Path=/;"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "incorrect credentials or no account with the given email"
+          },
+          "500": {
+            "description": "error occurred during generation of token/interacting with database"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserSignupRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "UserLoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        },
+        "required": ["email", "password"]
       }
     }
   }
