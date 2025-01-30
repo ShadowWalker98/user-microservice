@@ -4,3 +4,5 @@ CREATE TABLE users_tokens (
     token text,
     expiry timestamp DEFAULT NOW() + INTERVAL '2 days'
 );
+
+ALTER TABLE users_tokens ADD CONSTRAINT pk PRIMARY KEY (user_id, token_type);
