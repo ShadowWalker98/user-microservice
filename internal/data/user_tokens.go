@@ -137,6 +137,7 @@ func (utm UserTokenModel) CheckTokenValidityForUser(userId int, tokenType TokenT
 	return true, nil
 }
 
+// TODO: Add a method which checks for both tokens at once instead of one by one
 func (utm UserTokenModel) CheckTokenValidity(tokenType TokenType, token string) (int, error) {
 	// returns user id and nil if the token is valid
 	// returns -1 if invalid
