@@ -64,7 +64,7 @@ func (app *application) signupUsersHandler(w http.ResponseWriter, r *http.Reques
 
 	// setting it on the header instead of as a cookie
 	headers := make(http.Header)
-	headers.Set("X-Csrf-Token", csrfToken.Token)
+	headers.Set("x-csrf-token", csrfToken.Token)
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, headers)
 	if err != nil {
@@ -131,7 +131,7 @@ func (app *application) loginUsersHandler(w http.ResponseWriter, r *http.Request
 
 	// setting it on the header instead of as a cookie
 	headers := make(http.Header)
-	headers.Set("X-Csrf-Token", csrfToken.Token)
+	headers.Set("x-csrf-token", csrfToken.Token)
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, headers)
 	if err != nil {
@@ -260,6 +260,7 @@ func (app *application) CheckIfLoggedInHandler(w http.ResponseWriter, r *http.Re
 }
 
 // TODO: Check if session token is valid and return CSRF token if it is
+
 func (app *application) CheckIfSessionIsValid(w http.ResponseWriter, r *http.Request) {
 	// get the session cookie from the request and then check it against the database
 
@@ -291,7 +292,7 @@ func (app *application) CheckIfSessionIsValid(w http.ResponseWriter, r *http.Req
 
 	// setting it on the header instead of as a cookie
 	headers := make(http.Header)
-	headers.Set("X-Csrf-Token", csrfToken.Token)
+	headers.Set("x-csrf-token", csrfToken.Token)
 
 	// return the user id if the cookie is valid
 

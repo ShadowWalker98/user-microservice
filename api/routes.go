@@ -46,7 +46,7 @@ func (app *application) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		csrfToken := r.Header.Get("X-Csrf-Token")
+		csrfToken := r.Header.Get("x-csrf-token")
 		_, err = app.models.UserTokenModel.CheckTokenValidity(data.CSRF, csrfToken)
 		if err != nil {
 			err = app.writeJSON(w,
@@ -56,6 +56,23 @@ func (app *application) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			if err != nil {
 				app.serverErrorResponse(w, r, err)
 			}
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+}
+
+func (app *application) corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+		w.Header().Set("Access-Control-Expose-Headers", "x-csrf-token")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -76,10 +93,11 @@ func (app *application) routes() *httprouter.Router {
 	// TODO: Add all the routes to swagger
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthCheckHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/users/signup", app.signupUsersHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/users/signup", app.corsMiddleware(app.signupUsersHandler))
 	router.HandlerFunc(http.MethodPost, "/v1/users/login", app.loginUsersHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/users/logout", app.authMiddleware(app.logoutHandler))
 	router.HandlerFunc(http.MethodPost, "/v1/users/validate", app.CheckIfLoggedInHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/users/validate-session", app.CheckIfSessionIsValid)
+
 	return router
 }

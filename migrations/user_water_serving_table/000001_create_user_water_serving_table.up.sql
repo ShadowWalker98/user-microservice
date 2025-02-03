@@ -5,3 +5,5 @@ CREATE TABLE users_water_serving_data (
     required_servings int NOT NULL,
     consumed int NOT NULL
 );
+
+ALTER TABLE users_water_serving_data ADD CONSTRAINT users_water_pk PRIMARY KEY (id, date);

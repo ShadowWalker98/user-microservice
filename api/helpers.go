@@ -29,6 +29,7 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 	if err != nil {
 		return err
 	}
+	fmt.Println("headers are: ", w.Header())
 	return nil
 }
 
