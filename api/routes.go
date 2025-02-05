@@ -112,5 +112,6 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPost, "/v1/users/reset-password", app.resetPasswordHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/users/validate-verification-code", app.ValidateVerificationCodeHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/users/validate-password", app.authMiddleware(app.ValidatePasswordHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/users/users-measurements", app.authMiddleware(app.AddUserMeasurementsHandler))
 	return router
 }

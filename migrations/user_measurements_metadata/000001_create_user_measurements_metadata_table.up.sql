@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS users_measurements_metadata (
-    id int references users(user_id) PRIMARY KEY NOT NULL,
+    id int references users(user_id) NOT NULL,
     date date DEFAULT CURRENT_DATE,
     weight float NOT NULL,
     height float NOT NULL,
@@ -17,3 +17,5 @@ CREATE TABLE IF NOT EXISTS users_measurements_metadata (
     left_calf int,
     right_calf int
 );
+
+ALTER TABLE users_measurements_metadata ADD CONSTRAINT measurements_pk PRIMARY KEY (id, date);
