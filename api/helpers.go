@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"io"
+	"math/rand"
 	"net/http"
 	"strconv"
 )
@@ -80,4 +81,8 @@ func (app *application) readIDParams(r *http.Request) (int, error) {
 	} else {
 		return int(i), nil
 	}
+}
+
+func VerificationCodeGenerator() int {
+	return 100000 + rand.Intn(999999-100000)
 }

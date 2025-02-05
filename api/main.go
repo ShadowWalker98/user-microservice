@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"log"
 	"net/http"
 	"os"
@@ -26,9 +27,13 @@ type config struct {
 }
 
 type application struct {
-	config config
-	logger *log.Logger
-	models data.Models
+	config    config
+	logger    *log.Logger
+	models    data.Models
+	producers struct {
+		signup *kafka.Producer
+		reset  *kafka.Producer
+	}
 }
 
 func main() {
@@ -56,6 +61,33 @@ func main() {
 	}
 
 	app.routes()
+
+	// making the signup producer
+
+	signupProducer, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers":       "192.168.0.9:9092",
+		"socket.keepalive.enable": true,
+		"log.connection.close":    false,
+	})
+	if err != nil {
+		app.logger.Println("error while initialising kafka connection for signup producer")
+	}
+
+	app.producers.signup = signupProducer
+
+	// making the reset password producer (but do I really need to have multiple producers?)
+
+	resetProducer, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers":       "192.168.0.9:9092",
+		"socket.keepalive.enable": true,
+		"log.connection.close":    false,
+	})
+	if err != nil {
+		app.logger.Println("error while initialising kafka connection for reset password producer")
+	}
+
+	app.producers.reset = resetProducer
+
 	// we are now using gorm, so conn contains a pointer to a gorm.DB struct
 	conn := app.connectDB()
 
@@ -72,7 +104,7 @@ func main() {
 	}
 
 	logger.Printf("Starting server %s on port %s", cfg.env, srv.Addr)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		app.logger.Fatal(err)
 	}

@@ -34,7 +34,7 @@ func (app *application) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// TODO: Change it to verify both the tokens at once in a single DB query instead of one by one
 
-		_, err = app.models.UserTokenModel.CheckTokenValidity(data.Session, cookie.Value)
+		sessionUser, err := app.models.UserTokenModel.CheckTokenValidity(data.Session, cookie.Value)
 		if err != nil {
 			err = app.writeJSON(w,
 				http.StatusOK,
@@ -47,11 +47,22 @@ func (app *application) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		csrfToken := r.Header.Get("x-csrf-token")
-		_, err = app.models.UserTokenModel.CheckTokenValidity(data.CSRF, csrfToken)
+		csrfUser, err := app.models.UserTokenModel.CheckTokenValidity(data.CSRF, csrfToken)
 		if err != nil {
 			err = app.writeJSON(w,
 				http.StatusOK,
 				envelope{"message": "please login to view this page, csrf token expired"},
+				nil)
+			if err != nil {
+				app.serverErrorResponse(w, r, err)
+			}
+			return
+		}
+
+		if sessionUser != csrfUser {
+			err = app.writeJSON(w,
+				http.StatusOK,
+				envelope{"message": "malformed tokens, users do not match"},
 				nil)
 			if err != nil {
 				app.serverErrorResponse(w, r, err)
@@ -98,6 +109,8 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodDelete, "/v1/users/logout", app.authMiddleware(app.logoutHandler))
 	router.HandlerFunc(http.MethodPost, "/v1/users/validate", app.CheckIfLoggedInHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/users/validate-session", app.CheckIfSessionIsValid)
-
+	router.HandlerFunc(http.MethodPost, "/v1/users/reset-password", app.resetPasswordHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/users/validate-verification-code", app.ValidateVerificationCodeHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/users/validate-password", app.authMiddleware(app.ValidatePasswordHandler))
 	return router
 }
