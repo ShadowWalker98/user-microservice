@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -35,5 +36,20 @@ func (u UserModel) GetUserByEmail(email string) (*User, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
+	return user, nil
+}
+
+func (u UserModel) UpdatePasswordForUser(userId int, password string) (*User, error) {
+	var user = &User{
+		UserId:   userId,
+		Password: password,
+	}
+
+	result := u.db.Omit("created_at", "email").Save(&user)
+	if result.Error != nil {
+		fmt.Println("error occurred while trying to update ", userId, " password")
+		return nil, result.Error
+	}
+
 	return user, nil
 }

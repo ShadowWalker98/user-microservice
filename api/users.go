@@ -6,6 +6,7 @@ import (
 	"github.com/alexedwards/argon2id"
 	"gorm.io/gorm"
 	"net/http"
+	"time"
 	"user-microservice/internal/data"
 )
 
@@ -71,6 +72,8 @@ func (app *application) signupUsersHandler(w http.ResponseWriter, r *http.Reques
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+
+	app.signupEmailKafkaProducer(user.Email)
 }
 
 // TODO: Add validation checks for email and password
@@ -300,5 +303,154 @@ func (app *application) CheckIfSessionIsValid(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
 
+func (app *application) resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	// get the email from the request body
+
+	var input struct {
+		Email string `json:"email"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.logger.Println("error while reading email from request body")
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// check if the email exists in the database
+
+	user, err := app.models.UserModel.GetUserByEmail(input.Email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			app.badRequestResponse(w,
+				r,
+				errors.New("the email you entered does not have an account associated with it"))
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// the user is valid, so we generate a verification code and get the request IP address
+
+	requesterIPAddress := r.RemoteAddr
+	verificationCode := VerificationCodeGenerator()
+
+	// save it into a db if there is no record otherwise update it
+	userVerification := data.UsersVerifications{
+		UserId:           user.UserId,
+		VerificationCode: verificationCode,
+		Expiry:           time.Now().Add(time.Minute * 10),
+	}
+
+	err = app.models.UserVerificationModel.Insert(&userVerification)
+	if err != nil {
+		app.logger.Println(err)
+		app.serverErrorResponse(w, r, err)
+	}
+
+	// once we save it to the db, we push it onto the kafka topic for consumer to send email
+	// TODO: Add retry logic to the kafka producer
+	app.resetPasswordKafkaProducer(user.Email, verificationCode, requesterIPAddress)
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	if err != nil {
+		app.logger.Println(err)
+	}
+
+	return
+}
+
+// TODO: Add validate-verification-code handler
+
+func (app *application) ValidateVerificationCodeHandler(w http.ResponseWriter, r *http.Request) {
+	// get the verification code and user id from the request
+
+	var input struct {
+		VerificationCode int `json:"verification_code"`
+		UserId           int `json:"user_id"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// now check if the verification code belongs to the same user id and if it hasn't expired yet
+	// if it has expired, then we ask the user to reset their password again from the start
+
+	userVerified, err := app.models.UserVerificationModel.GetByUserIdAndVerificationCode(input.UserId, input.VerificationCode)
+	if err != nil {
+		// the verification code has either expired or there is a malformed request for the wrong user id
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// now we know the code is valid. We send a response to the frontend saying yes it is valid, we can proceed with
+	// password reset
+
+	// setting a cookie on the response so the user can access the protected reset password route
+	dummyUser := data.User{
+		UserId: input.UserId,
+	}
+	_ = app.setCookies(w, r, &dummyUser)
+	// setting the csrf token as well on the headers
+
+	// creating a csrf token
+
+	csrfToken, err := app.models.UserTokenModel.CreateToken(dummyUser.UserId, data.CSRF)
+	if err != nil {
+		app.logger.Println("error occurred while generating CSRF token", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// setting it on the header instead of as a cookie
+	headers := make(http.Header)
+	headers.Set("x-csrf-token", csrfToken.Token)
+
+	err = app.writeJSON(w, http.StatusOK, envelope{
+		"user_id": userVerified.UserId,
+	}, headers)
+	if err != nil {
+		app.logger.Println(err)
+	}
+}
+
+func (app *application) ValidatePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	// get the password fields from the request
+
+	var input struct {
+		UserId           int    `json:"user_id"`
+		Password         string `json:"password"`
+		RepeatedPassword string `json:"repeated_password"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if input.Password != input.RepeatedPassword {
+		app.badRequestResponse(w, r, errors.New("the passwords don't match"))
+		return
+	}
+
+	hash, err := argon2id.CreateHash(input.Password, argon2id.DefaultParams)
+
+	user, err := app.models.UserModel.UpdatePasswordForUser(input.UserId, hash)
+	if err != nil {
+		app.logger.Println(err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 }
