@@ -45,7 +45,7 @@ func (utm UserTokenModel) CreateToken(userId int, tokenType TokenType) (*UserTok
 		UserId:    userId,
 		TokenType: int(tokenType),
 		Token:     generatedToken,
-		Expiry:    time.Now().AddDate(0, 0, 2),
+		Expiry:    time.Now().AddDate(0, 0, 2).UTC(),
 	}
 
 	result := utm.conn.Clauses(clause.OnConflict{
@@ -67,7 +67,7 @@ func (utm UserTokenModel) UpdateToken(userId int, tokenType TokenType) (*UserTok
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("error while generating new token for userId %d", userId))
 	}
-	expiryTime := time.Now().AddDate(0, 0, 2)
+	expiryTime := time.Now().AddDate(0, 0, 2).UTC()
 	userToken := UserToken{
 		UserId:    userId,
 		TokenType: int(tokenType),
@@ -126,7 +126,7 @@ func (utm UserTokenModel) CheckTokenValidityForUser(userId int, tokenType TokenT
 		return false, result.Error
 	}
 
-	if userToken.Expiry.Before(time.Now()) {
+	if userToken.Expiry.Before(time.Now().UTC()) {
 		return false, nil
 	}
 
