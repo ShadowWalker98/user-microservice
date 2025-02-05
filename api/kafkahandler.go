@@ -8,15 +8,19 @@ import (
 
 func (app *application) signupEmailKafkaProducer(newUserEmail string) {
 	app.logger.Printf("Producing event to send signup email to user: %s", newUserEmail)
-	signupProducer, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers":       "192.168.0.9:9092",
-		"socket.keepalive.enable": true,
-		"log.connection.close":    false,
-	})
-	if err != nil {
-		app.logger.Println("error while initialising kafka connection for signup producer")
+	if app.producer == nil {
+		signupProducer, err := kafka.NewProducer(&kafka.ConfigMap{
+			"bootstrap.servers":       "192.168.0.9:9092",
+			"socket.keepalive.enable": true,
+			"log.connection.close":    false,
+		})
+		if err != nil {
+			app.logger.Println("error while initialising kafka connection for signup producer")
+		}
+
+		app.producer = signupProducer
 	}
-	go kafka2.SignupProducer(signupProducer, newUserEmail)
+	go kafka2.SignupProducer(app.producer, newUserEmail)
 	app.logger.Println("Fired a goroutine to kafka signup producer")
 }
 
@@ -25,15 +29,18 @@ func (app *application) resetPasswordKafkaProducer(email string, verificationCod
 		email,
 		verificationCode,
 		ipAddress)
-	resetProducer, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers":       "192.168.0.9:9092",
-		"socket.keepalive.enable": true,
-		"log.connection.close":    false,
-	})
-
-	if err != nil {
-		app.logger.Println("error while initialising kafka connection for reset password producer")
+	if app.producer == nil {
+		resetProducer, err := kafka.NewProducer(&kafka.ConfigMap{
+			"bootstrap.servers":       "192.168.0.9:9092",
+			"socket.keepalive.enable": true,
+			"log.connection.close":    false,
+		})
+		if err != nil {
+			app.logger.Println("error while initialising kafka connection for reset password producer")
+		}
+		app.producer = resetProducer
 	}
-	go kafka2.ResetPasswordProducer(resetProducer, email, verificationCode, ipAddress)
+
+	go kafka2.ResetPasswordProducer(app.producer, email, verificationCode, ipAddress)
 	app.logger.Println("Fired a goroutine to kafka reset password producer")
 }

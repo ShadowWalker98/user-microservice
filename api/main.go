@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"log"
 	"net/http"
 	"os"
@@ -26,9 +27,10 @@ type config struct {
 }
 
 type application struct {
-	config config
-	logger *log.Logger
-	models data.Models
+	config   config
+	logger   *log.Logger
+	models   data.Models
+	producer *kafka.Producer
 }
 
 func main() {
@@ -51,8 +53,9 @@ func main() {
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	app := &application{
-		config: cfg,
-		logger: logger,
+		config:   cfg,
+		logger:   logger,
+		producer: nil,
 	}
 
 	app.routes()
