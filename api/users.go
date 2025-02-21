@@ -73,7 +73,7 @@ func (app *application) signupUsersHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	app.signupEmailKafkaProducer(user.Email)
+	app.signupEmailKafkaProducer(user.Email, user.UserId)
 }
 
 // TODO: Add validation checks for email and password

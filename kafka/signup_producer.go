@@ -22,13 +22,13 @@ const (
 	KafkaResetTopic  = "workouts-v1-users-password-reset-test"
 )
 
-func SignupProducer(p *kafka.Producer, email string) {
+func SignupProducer(p *kafka.Producer, email string, userId int) {
 
 	fmt.Println("Creating a user")
 
 	topic := KafkaSignupTopic
 	user := UserInfo{
-		ID:    2,
+		ID:    userId,
 		Email: email,
 	}
 

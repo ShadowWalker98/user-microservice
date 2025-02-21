@@ -6,11 +6,11 @@ import (
 	kafka2 "user-microservice/kafka"
 )
 
-func (app *application) signupEmailKafkaProducer(newUserEmail string) {
+func (app *application) signupEmailKafkaProducer(newUserEmail string, newUserId int) {
 	app.logger.Printf("Producing event to send signup email to user: %s", newUserEmail)
 	if app.producer == nil {
 		signupProducer, err := kafka.NewProducer(&kafka.ConfigMap{
-			"bootstrap.servers":       "192.168.0.9:9092",
+			"bootstrap.servers":       "192.168.0.76:9092",
 			"socket.keepalive.enable": true,
 			"log.connection.close":    false,
 		})
@@ -20,7 +20,7 @@ func (app *application) signupEmailKafkaProducer(newUserEmail string) {
 
 		app.producer = signupProducer
 	}
-	go kafka2.SignupProducer(app.producer, newUserEmail)
+	go kafka2.SignupProducer(app.producer, newUserEmail, newUserId)
 	app.logger.Println("Fired a goroutine to kafka signup producer")
 }
 
