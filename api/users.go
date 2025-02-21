@@ -13,8 +13,10 @@ import (
 // TODO : Add validation checks for email and password
 func (app *application) signupUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Email     string `json:"email"`
+		Password  string `json:"password"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -35,8 +37,10 @@ func (app *application) signupUsersHandler(w http.ResponseWriter, r *http.Reques
 	fmt.Printf("the hash is %s\n", hash)
 
 	user := data.User{
-		Email:    input.Email,
-		Password: hash,
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Email:     input.Email,
+		Password:  hash,
 	}
 
 	// inserting user into the users table
